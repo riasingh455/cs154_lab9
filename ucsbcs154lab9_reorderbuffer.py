@@ -33,41 +33,10 @@ rob_preg = pyrtl.MemBlock(bitwidth=5, addrwidth=4, name="rob_preg")
 
 #---------------------------------------------------------------------------------------
 
+
 h = pyrtl.Register(4, name='rob_h') #oldest val entry
 t = pyrtl.Register(4, name='rob_t') #next freee
 count = pyrtl.Register(5, name='rob_count') #valid entries
-
-# full = count == 16 
-# empty = count == 0
-
-# not_full  = rob_alloc_req_val_i & ~full #rob aint full
-# entry_ready = rob_valid[h] & ~rob_pending[h]
-# commit = (~empty) & entry_ready      
-
-# rob_alloc_req_rdy_o <<= ~full #atleast one free spot
-# rob_alloc_resp_slot_o <<= t
-
-# rob_commit_wen_o <<= commit
-# rob_commit_slot_o <<= h
-# rob_commit_rf_waddr_o <<= rob_preg[h]
-
-# with pyrtl.conditional_assignment:
-#     with not_full:                           
-#         rob_valid[t] <<= 1
-#         rob_pending[t] <<= 1
-#         rob_preg[t] <<= rob_alloc_req_preg_i
-#     with rob_fill_val_i:                     
-#         rob_pending[rob_fill_slot_i] <<= 0
-
-# t.next <<= pyrtl.select(not_full,  t+1,  t)
-# h.next <<= pyrtl.select(commit, h+1, h)
-
-# increase = not_full & ~commit             
-# decrease = commit & ~not_full   
-# #if both fire the +1 -1 cancel out           
-# count.next <<= count + increase - decrease
-
-
 
 
 full = count == 16
@@ -78,10 +47,15 @@ head_is_being_filled = rob_fill_val_i & (h == rob_fill_slot_i)
 entry_ready = rob_valid[h] & ~rob_pending[h] & ~head_is_being_filled
 commit_fire = (~empty) & entry_ready       
 
-space_next = ~full | commit_fire
-alloc_fire = rob_alloc_req_val_i & space_next
+count_next = count + rob_alloc_req_val_i - commit_fire     
 
-rob_alloc_req_rdy_o <<= space_next               
+space_now = count_next < 16          
+rdy_now   = space_now & ~rob_fill_val_i   
+
+rob_alloc_req_rdy_o <<= rdy_now           
+alloc_fire           = rob_alloc_req_val_i & rdy_now  
+
+
 rob_alloc_resp_slot_o <<= t
 
 rob_commit_wen_o <<= commit_fire
@@ -100,8 +74,6 @@ t.next <<= pyrtl.select(alloc_fire,  t+1,  t)
 h.next <<= pyrtl.select(commit_fire, h+1,  h)
 
 count.next <<= count + alloc_fire - commit_fire 
-
-
 
 #---------------------------------------------------------------------------------------
 ### Testing and Simulation ###
