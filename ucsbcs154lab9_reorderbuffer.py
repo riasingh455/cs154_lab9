@@ -50,10 +50,10 @@ commit_fire = (~empty) & entry_ready
 count_next = count + rob_alloc_req_val_i - commit_fire     
 
 space_now = count_next < 16          
-rdy_now   = space_now & ~rob_fill_val_i   
+rdy_now = space_now & ~rob_fill_val_i   
 
 rob_alloc_req_rdy_o <<= rdy_now           
-alloc_fire           = rob_alloc_req_val_i & rdy_now  
+alloc_fire = rob_alloc_req_val_i & rdy_now  
 
 
 rob_alloc_resp_slot_o <<= t
