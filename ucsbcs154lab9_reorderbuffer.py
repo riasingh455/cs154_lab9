@@ -78,7 +78,7 @@ t = pyrtl.Register(bitwidth=4, name='t')
 s_avail = ~rob_valid[t]
 
 rob_alloc_req_rdy_o <<= s_avail
-t.next <<= t+1     
+#t.next <<= t+1     
 
 alloc_fire = s_avail & rob_alloc_req_val_i
 with pyrtl.conditional_assignment:
@@ -103,6 +103,8 @@ with pyrtl.conditional_assignment:
             h.next |= h + 1
     with ~commit_fire:
         rob_commit_wen_o |= 0
+
+t.next <<= pyrtl.select(alloc_fire, t + 1, t) #fixes - only advance when fye=1
 rob_commit_slot_o <<= h
 rob_commit_rf_waddr_o <<= rob_preg[h]
 
