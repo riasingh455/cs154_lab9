@@ -75,19 +75,13 @@ rob_preg = pyrtl.MemBlock(bitwidth=5, addrwidth=4, name="rob_preg")
 h = pyrtl.Register(bitwidth=4, name='h')
 t = pyrtl.Register(bitwidth=4, name='t')
 
-# s_avail = ~rob_valid[t]
+s_avail = ~rob_valid[t]
 
-# rob_alloc_req_rdy_o <<= s_avail
-# #t.next <<= t+1   
+rob_alloc_req_rdy_o <<= s_avail
+#t.next <<= t+1   
+t.next <<= pyrtl.select(t == 15, 0, t + 1)
 
-# alloc_fire = s_avail & rob_alloc_req_val_i
-commit_fire = rob_valid[h] & ~rob_pending[h]
-head_frees_tail = commit_fire & (t == h)     
-s_avail = (~rob_valid[t]) | head_frees_tail  
-ready_in = s_avail & ~rob_fill_val_i         
-
-rob_alloc_req_rdy_o <<= ready_in
-alloc_fire = ready_in & rob_alloc_req_val_i
+alloc_fire = s_avail & rob_alloc_req_val_i
 with pyrtl.conditional_assignment:
     with alloc_fire:
         rob_pending[t] |= 1
@@ -97,6 +91,7 @@ with pyrtl.conditional_assignment:
     with rob_fill_val_i:
         rob_pending[rob_fill_slot_i] |= 0
 
+commit_fire = rob_valid[h] & ~rob_pending[h]
 
 with pyrtl.conditional_assignment:
     with commit_fire:
@@ -109,7 +104,8 @@ with pyrtl.conditional_assignment:
             h.next |= h + 1
     with ~commit_fire:
         rob_commit_wen_o |= 0
-t.next <<= t + alloc_fire  
+
+#t.next <<= t + alloc_fire 
 #t.next <<= pyrtl.select(alloc_fire, t + 1, t) #fixes - only advance when fye=1, sike
 rob_commit_slot_o <<= h
 rob_commit_rf_waddr_o <<= rob_preg[h]
