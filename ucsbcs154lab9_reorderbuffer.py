@@ -80,7 +80,6 @@ s_avail = ~rob_valid[t]
 rob_alloc_req_rdy_o <<= s_avail
 #t.next <<= t+1   
 alloc_fire = s_avail & rob_alloc_req_val_i
-t.next <<= pyrtl.select(alloc_fire, t + 1,t)  
 
 with pyrtl.conditional_assignment:
     with alloc_fire:
@@ -105,6 +104,11 @@ with pyrtl.conditional_assignment:
     with ~commit_fire:
         rob_commit_wen_o |= 0
 
+with pyrtl.conditional_assignment:
+    with t == 15:
+        t.next |= 0
+    with pyrtl.otherwise:
+        t.next |= t + 1
 #t.next <<= t + alloc_fire 
 #t.next <<= pyrtl.select(alloc_fire, t + 1, t) #fixes - only advance when fye=1, sike
 rob_commit_slot_o <<= h
