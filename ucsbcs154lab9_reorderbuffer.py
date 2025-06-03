@@ -79,9 +79,9 @@ s_avail = ~rob_valid[t]
 
 rob_alloc_req_rdy_o <<= s_avail
 #t.next <<= t+1   
-t.next <<= pyrtl.select(t == 15, 0, t + 1)
-
 alloc_fire = s_avail & rob_alloc_req_val_i
+t.next <<= pyrtl.select(alloc_fire, t + 1,t)  
+
 with pyrtl.conditional_assignment:
     with alloc_fire:
         rob_pending[t] |= 1
