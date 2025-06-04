@@ -91,8 +91,6 @@ with pyrtl.conditional_assignment:
         rob_preg[t] |= rob_alloc_req_preg_i
         rob_alloc_resp_slot_o |= t
         t.next |= t+1
-
-with pyrtl.conditional_assignment:
     with rob_fill_val_i:
         rob_pending[rob_fill_slot_i] |= 0
 
