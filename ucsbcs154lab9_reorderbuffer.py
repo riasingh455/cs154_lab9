@@ -75,11 +75,14 @@ rob_preg = pyrtl.MemBlock(bitwidth=5, addrwidth=4, name="rob_preg")
 h = pyrtl.Register(bitwidth=4, name='h')
 t = pyrtl.Register(bitwidth=4, name='t')
 
-s_avail = ~rob_valid[t]
+s_avail = pyrtl.WireVector(bitwidth=1, name='s_avail')
+s_avail <<= ~rob_valid[t]
+
 
 rob_alloc_req_rdy_o <<= s_avail
 #t.next <<= t+1   
-alloc_fire = s_avail & rob_alloc_req_val_i
+alloc_fire = pyrtl.WireVector(bitwidth=1, name='alloc_fire')
+alloc_fire <<= s_avail & rob_alloc_req_val_i
 
 with pyrtl.conditional_assignment:
     with alloc_fire:
@@ -87,28 +90,28 @@ with pyrtl.conditional_assignment:
         rob_valid[t] |= 1
         rob_preg[t] |= rob_alloc_req_preg_i
         rob_alloc_resp_slot_o |= t
+        t.next |= t+1
+
+with pyrtl.conditional_assignment:
     with rob_fill_val_i:
         rob_pending[rob_fill_slot_i] |= 0
 
-commit_fire = rob_valid[h] & ~rob_pending[h]
+commit_fire = pyrtl.WireVector(bitwidth=1, name='commit_fire')
+commit_fire <<= rob_valid[h] & ~rob_pending[h]
 
 with pyrtl.conditional_assignment:
     with commit_fire:
+        h.next |= h+1  
         rob_commit_wen_o |= 1
         rob_valid[h] |= 0
-        h_is_last = h == 15
-        with h_is_last:
-            h.next |= 0
-        with pyrtl.otherwise:
-            h.next |= h + 1
+        #h_is_last = h == 15
+        # with h_is_last:
+        #     h.next |= 0
+        # with pyrtl.otherwise:
+        #     h.next |= h + 1
     with ~commit_fire:
         rob_commit_wen_o |= 0
-
-with pyrtl.conditional_assignment:
-    with t == 15:
-        t.next |= 0
-    with pyrtl.otherwise:
-        t.next |= t + 1
+    
 #t.next <<= t + alloc_fire 
 #t.next <<= pyrtl.select(alloc_fire, t + 1, t) #fixes - only advance when fye=1, sike
 rob_commit_slot_o <<= h
